@@ -141,7 +141,7 @@ dmypy.json
 *.out
 *.err
 output/
-*.json
+/*.json
 
 # ipynb notebook
 *.ipynb
