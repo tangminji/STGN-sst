@@ -14,22 +14,10 @@ from transformers import BertTokenizer,BertConfig,BertForSequenceClassification
 from torch.utils.data import Dataset
 
 print("Loading the tokenizer")
-tokenizer = BertTokenizer.from_pretrained(args.model_path) #"bert-large-uncased"
+tokenizer = BertTokenizer.from_pretrained(args.model_path)
 
 print("Loading SST")
 sst = pytreebank.load_sst()
-
-SEP = [tokenizer.sep_token_id] #[SEP]
-
-# 其实完全可以用padding='max_length'实现
-def rpad(array, n=70):
-    """Right padding."""
-    current_len = len(array)
-    if current_len > n:
-        return array[: n - 1] + SEP
-    extra = n - current_len
-    return array + ([0] * extra)
-
 
 def get_binary_label(label):
     """Convert fine-grained label to binary label."""
@@ -60,7 +48,7 @@ class SSTDataset(Dataset):
             binary: bool
                 If true, use binary labels. Else, use fine-grained.
         """
-        root = True #只用树根标签
+        root = True # use root data only
         print(f"Loading SST {split} set")
         self.sst = sst[split]
 
@@ -136,20 +124,17 @@ def load_sst_noisy_data(path, raw=False):
             noisys.append(noisy)
     return words, noisys, labels
 
-# 生成噪声样本
 def generate_noisy_labels(args):
     print(f'==> Generate noisy labels with noise_rate={args.noise_rate}...')
     train_words, train_labels = load_sst_data(os.path.join(args.data_path,'train_idx.txt'))
-    # 添加噪声部分,以后要重复训练的话可以删
     noise_rate = args.noise_rate
     total_train = len(train_labels)
-    # 噪声样本, 这里是二分类，如果是五分类就复杂些
     noisy_ind = np.random.choice(total_train, int(total_train*noise_rate), False).tolist()
     noisy_ind.sort()
     train_noisy = []
     for i in range(total_train):
-        if i in noisy_ind: #这里要考虑5分类问题
-            noisy = random.randint(0,args.num_class-2) #噪声类别 0~x-1,x+1~k-1
+        if i in noisy_ind:
+            noisy = random.randint(0,args.num_class-2)
             if noisy >= train_labels[i]:
                 noisy += 1
             train_noisy.append(noisy) 
@@ -167,10 +152,7 @@ def generate_noisy_labels(args):
         f.writelines('\n'.join(lines))
     print(f'==> Noisy Label generated at {noisy_file}')
 
-# 这里采用二分类
-# noise_rate
-# 这里的label是真实标签，noisy是噪声标签
-# Dataset (words, noisy ,truth)
+# Dataset (words, labels, target_gt, index)
 def get_sst_train_and_val_loader(args):
     print('==> Preparing data for sst..')
 
@@ -219,8 +201,8 @@ def get_SST_model_and_loss_criterion(args):
     config.num_labels = args.num_class
     model = BertForSequenceClassification.from_pretrained(args.model_path, config=config)
     model.to(args.device)
-    criterion = SST_CONFIG[args.loss].to(args.device) #CE/GCE
-    # 手动设置，因为加载json文件前就已经创建了Loss了
+    criterion = SST_CONFIG[args.loss].to(args.device) # CE/GCE
+    # Update parameter for loss function
     if args.loss == 'GCE':
         criterion.q = args.q 
         criterion.num_classes = args.num_class

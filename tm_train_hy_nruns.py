@@ -1,7 +1,5 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-# #os.environ["CUDA_VISIBLE_DEVICES"] = "0"#"0,1,2"
 
 import time
 import torch
@@ -20,11 +18,6 @@ from data.sst_dataset import get_sst_train_and_val_loader,get_SST_model_and_loss
 import json
 from hyperopt import STATUS_OK
 import csv
-
-first = True
-counter = 0
-sig_max = args.sig_max
-delta = 0#判断是否满足增速
 
 MD_CLASSES = {
     'SST': (get_sst_train_and_val_loader, get_SST_model_and_loss_criterion)
@@ -69,9 +62,6 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
         global_iter += 1
         # similar to global variable
         args.index = index
-        # if len(target.size()) == 1:
-        #     target = torch.zeros(target.size(0), args.num_class).scatter_(1, target.view(-1, 1),
-        #                                                                   1)  # convert label to one-hot
         data, target = {k:v.to(args.device) for k,v in data.items()}, target.to(args.device)
 
         output = model(**data)['logits']
@@ -83,8 +73,8 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
         # SLN
         if args.mode == 'GN_on_label':
             onehot = F.one_hot(target.long(), args.num_class).float()
-            onehot += args.sigma*torch.randn(onehot.size()).to(args.device) # 在标签上添加onehot噪声
-            loss = -torch.sum(F.log_softmax(output, dim=1)*onehot, dim=1) #交叉熵
+            onehot += args.sigma*torch.randn(onehot.size()).to(args.device) # Add noise on label
+            loss = -torch.sum(F.log_softmax(output, dim=1)*onehot, dim=1)
         else:
             if args.mode == 'GN_on_moutput':
             # TODO: NMO: noise on model output
@@ -99,7 +89,7 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
                 if len(loss_lst) > args.avg_steps:
                     loss_lst.pop(0)
                 #print('random_walk',len(loss_lst[-1]),args.drop_rate_schedule[args.cur_epoch - 1])
-                losses = sum(loss_lst,[]) #合成一个一维向量
+                losses = sum(loss_lst,[])
                 k1 = torch.quantile(torch.tensor(losses).to(args.device),
                                     1 - args.drop_rate_schedule[args.cur_epoch - 1])
                 #TODO: element2: from forgetting events perspective, see algorithm 1 in ICLR19 an empirical study of example...
@@ -112,13 +102,8 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
 
                 #when to update, since forgetting times of any sample reaches to args.forget_times
 
-                # 这里可以用这个替代
-                # if (args.forgetting>args.forget_times).any():
                 times_ge_or_not = torch.ge(args.forgetting[index], args.forget_times).detach()
-                if times_ge_or_not.any(): #有遗忘次数较多的样本
-                # if args.forget_times in args.forgetting: #这里用in不一定很好吧
-                #     #greater or equal
-                #     times_ge_or_not = torch.ge(args.forgetting[index], args.forget_times).detach()
+                if times_ge_or_not.any(): # Some samples forget too much times
                     args.sign_forgetting_events = ((1-args.ratio_l)*args.total) * torch.tensor([1 if t == True else -1 for t in times_ge_or_not]).to(args.device)
                     args.sign_loss = (args.ratio_l * args.total) * torch.sign(loss - k1).to(args.device)
                 else:
@@ -130,27 +115,13 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
 
         # ADD
         loss_parameters[index] = loss.detach().cpu()
-
-        loss = loss.mean()        
-        #new_l = new_l.mean()
+        loss = loss.mean()
         optimizer.zero_grad()
         loss.backward()
         clip_grad_norm_(model.parameters(), max_norm=3, norm_type=2)
         optimizer.step()
 
         args.sm = None
-
-        # Measure accuracy and record loss
-        # train_loss.update(loss.item(), data.size(0))
-        # pred = output.argmax(dim=1, keepdim=True)
-        # # noise & disturbance ground-truth index
-        # gt = [1 if target[i] == target_gt[i] else 0 for i in range(len(target))]
-        # fc = [1 if pred[i] == target[i] and gt[i] == 0 else 0 for i in range(len(target))]  # memorize noise label
-        # tc = [1 if pred[i] == target[i] and gt[i] == 1 else 0 for i in range(len(target))]  # learn clean label
-        # fcorrect.update(sum(fc) * (100.0 / len(fc)), len(fc))
-        # tcorrect.update(sum(tc) * (100.0 / len(tc)), len(tc))
-        # acc1 = compute_topk_accuracy(output, target, topk=(1,))
-        # correct.update(acc1[0].item(), data.size(0))
 
         # Measure accuracy and record loss
         train_loss.update(loss.item(), target.size(0))
@@ -162,12 +133,9 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
         fc = agree[~gt]
         tc = agree[gt]
         num = target.size(0)
+        # fc + tc <= 1.0
         fcorrect.update(fc.sum().item() * (100.0 / num), num)
         tcorrect.update(tc.sum().item() * (100.0 / num), num)
-        # if(len(fc)>0):
-        #     fcorrect.update(fc.sum().item() * (100.0 / len(fc)), len(fc))
-        # if(len(tc)>0):
-        #     tcorrect.update(tc.sum().item() * (100.0 / len(tc)), len(tc))
         acc1 = compute_topk_accuracy(output, target, topk=(1,))
         correct.update(acc1[0].item(), target.size(0))
 
@@ -215,50 +183,50 @@ def validate(args, model, loader, criterion, epoch, logpath, mode='val'):
     log_value('{}/accuracy'.format(mode), correct.avg, step=epoch)
     return test_loss.avg, correct.avg
 
-# 这里没必要记录数据了
-# def save_data(args, net, train_loader, val_loader, test_loader):
-#     st = time.time()
-#     print(f'Save sentence labels and embbeding at {args.save_dir}')
-#     state = torch.load(os.path.join(args.save_dir,'net.pt'))
-#     net.load_state_dict(state)
-#     net.eval()
-#     loaders = {
-#         'train': train_loader,
-#         'val': val_loader,
-#         'test': test_loader,
-#     }
-#     with torch.no_grad():
-#         for type, loader in loaders.items():
-#             data_length = len(loader.dataset)
-#             embeds = torch.zeros(data_length, args.hidden_size)
-#             targets = torch.zeros(data_length, dtype=int)
-#             target_gts = torch.zeros(data_length, dtype=int)
+def save_data(args, net, train_loader, val_loader, test_loader):
+    st = time.time()
+    print(f'Save sentence labels and embbeding at {args.save_dir}')
+    state = torch.load(os.path.join(args.save_dir,'net.pt'))
+    net.load_state_dict(state)
+    net.eval()
+    loaders = {
+        'train': train_loader,
+        'val': val_loader,
+        'test': test_loader,
+    }
+    args.hidden_size = 768
+    with torch.no_grad():
+        for type, loader in loaders.items():
+            data_length = len(loader.dataset)
+            embeds = torch.zeros(data_length, args.hidden_size)
+            targets = torch.zeros(data_length, dtype=int)
+            target_gts = torch.zeros(data_length, dtype=int)
 
-#             for data, length, target, target_gt, index in loader:
-#                 data = data.to(args.device)
-#                 embeds[index] = net.sentence_encode(data, length).cpu()
-#                 targets[index] = target
-#                 target_gts[index] = target_gt
+            for data, target, target_gt, index in loader:
+                data = {k:v.to(args.device) for k,v in data.items()}
+                # get_sentence_output: pooled_output
+                embeds[index] = net.bert(**data)[1].cpu()
+                targets[index] = target
+                target_gts[index] = target_gt
         
-#             # with open(f'{args.save_dir}/{type}_embed.txt', 'w') as f:
-#             #     for embed, target, target_gt in zip(embeds, targets, target_gts):
-#             #         f.write(f"{target}\t{target_gt}\t{','.join(map(str,embed.numpy().tolist()))}\n")
-#             torch.save({
-#                 'targets': targets,
-#                 'target_gt': target_gts,
-#                 'embed': embeds
-#             },os.path.join(args.save_dir,f'{type}_embed.pt'))
-#     ed = time.time()
-#     print(f'Sentence labels saved, {ed-st} sec used')
+            torch.save({
+                'targets': targets,
+                'target_gt': target_gts,
+                'embed': embeds
+            },os.path.join(args.save_dir,f'{type}_embed.pt'))
+    ed = time.time()
+    print(f'Sentence labels saved, {ed-st} sec used')
 
 def main(params):
     """Objective function for Hyperparameter Optimization"""
     # Keep track of evals
 
+    # Ablation Study
     if 'ab_sigma' in args.exp_name:
         params['sigma'] = args.sigma
     if 'ab_l' in args.exp_name:
         params['ratio_l'] = args.ratio_l
+    
     # For STGN
     #TODO: automatic adjustment (sig_max, lr_sig)
     if 'STGN' in args.exp_name:
@@ -281,8 +249,8 @@ def main(params):
     
     if not os.path.exists(args.exp_name):
         os.makedirs(args.exp_name)
-    #args.logpath = os.path.join(args.exp_name, 'log.txt')
-    args.logpath = args.exp_name + '/' + 'log.txt' # 后面用/分割，所以这里要指定/
+
+    args.logpath = args.exp_name + '/' + 'log.txt'
     
     args.log_dir = os.path.join(os.getcwd(), args.exp_name)
     args.save_dir = os.path.join(args.log_dir, 'weights')
@@ -308,7 +276,6 @@ def main(params):
     train_length = len(train_loader.dataset)
 
     #update perturb variance, dynamic sigma for each sample
-    #暂时未写入文件保存
     args.sigma_dyn = torch.tensor([args.sigma]*train_length,
                            dtype=torch.float32,
                            requires_grad=False,
@@ -327,13 +294,14 @@ def main(params):
         # TODO: NMP: noise on model parameters
         #https://discuss.pytorch.org/t/difference-between-state-dict-and-parameters/37531/7
         for param in parameters:
-                # TODO: leaf nodes
-                param.register_hook(hook_fn_parameter)
+            # TODO: leaf nodes
+            param.register_hook(hook_fn_parameter)
 
     cudnn.benchmark = True
-    optimizer = torch.optim.Adam(parameters, lr=args.lr)
+    # For LSTM
     # optimizer = torch.optim.RMSprop(parameters, lr=args.lr, alpha=args.decay, weight_decay=args.weight_decay)
-    #optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
+    # For Bert
+    optimizer = torch.optim.Adam(parameters, lr=args.lr)
 
     # Training
     global_t0 = time.time()
@@ -345,9 +313,9 @@ def main(params):
     args.drop_rate_schedule = np.ones(args.epochs) * args.noise_rate
     args.drop_rate_schedule[:args.num_gradual] = np.linspace(0, args.noise_rate, args.num_gradual)
 
-    # 在train之前测试一次
-    for epoch in range(0, args.epochs + 1): # epoch 0就是train之前
+    for epoch in range(0, args.epochs + 1):
         args.cur_epoch = epoch
+        # Test only on epoch 0
         if epoch > 0:
             global_iter, train_loss, train_acc, tc_acc, fc_acc = train_others(args, net, train_loader, optimizer, criterion,
                                                                 global_iter, epoch, args.logpath)
@@ -358,8 +326,6 @@ def main(params):
         if val_acc > val_best:
             val_best = val_acc
             test_best = test_acc
-            # TODO 调参的时候，没有保存模型，节省存储空间
-            #checkpoint(val_acc, epoch, model, args.save_dir)
             torch.save(net.state_dict(), os.path.join(args.save_dir,'net.pt'))
 
         if epoch == 0:
@@ -375,8 +341,8 @@ def main(params):
                     name='epoch_stats_sigma_dyn_clean',
                     step=epoch)
 
-    # reload the best model
-    # save_data(args, net, train_loader, val_loader, test_loader)
+    # reload the best model and save sentence representation
+    save_data(args, net, train_loader, val_loader, test_loader)
 
     run_time = time.time()-global_t0
     #save 3 types of acc
@@ -385,7 +351,7 @@ def main(params):
         logwriter = csv.writer(logfile, delimiter=',')
         logwriter.writerows(res_lst)
     
-    stable_acc = sum([x[3] for x in res_lst[-5:]])/5 # 最后稳定时的test_ACC
+    stable_acc = sum([x[3] for x in res_lst[-5:]])/5 # test_acc during last 5 epochs
 
     # Val_best Test_at_val_best Stable_test_acc
     with open(os.path.join(args.log_dir, 'best_results.txt'), 'w') as outfile:
@@ -393,14 +359,12 @@ def main(params):
     log(args.logpath, '\nBest Acc: {}\tVal Acc: {}\t Stable Acc:{}'.format(test_best,val_best,stable_acc))
     log(args.logpath, '\nTotal Time: {:.1f}s.\n'.format(run_time))
 
-    # loss = - val_best
     loss = - test_best
     return {'loss': loss, 'best_acc': val_best, 'test_at_best': test_best, 'stable_acc': stable_acc,
             'params': params, 'train_time': run_time, 'status': STATUS_OK}
             
 if __name__ == '__main__':
     print("load params from : ", args.params_path)
-    # TODO 之前的方式是载入 ['best']，这里更换是因为程序跑的总是提前停机，产生不了 best params 文件，所以手动选择要载入的参数选择文件
     params = json.load(open(args.params_path, 'r', encoding="utf-8"))['best'] if 'base' not in args.exp_name else {}
     assert params is not None
     main(params=params)

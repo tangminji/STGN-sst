@@ -24,8 +24,7 @@ def fn(data):
     return pad_sequence(words), list(map(len,words)), torch.tensor(labels)
 # words, length, labels, ground_truth
 
-# 先不加噪声
-# 可以读proccess和raw data
+# no noise
 def get_sst_data(path, raw=False):
     words, labels = [],[]
     with open(path, "r", encoding="utf-8") as f:

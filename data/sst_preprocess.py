@@ -31,10 +31,10 @@ def getsstdata():
     words = {}
     for kind in all_type:
         words[kind] = list(map(lambda x:x.lower().split('|'),data_all[kind]['tokens']))
-    # 还可以加优化: 去掉标点，去掉过低频词
+    # TODO remove punctuations and uncommon words
     del data_all
 
-    # 改成2分类
+    # convert to 2 kinds
     print('To 2 kinds...')
     for kind in all_type:
         new_label , new_words = [],[]
@@ -55,6 +55,7 @@ def set_seed(seed=0):
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     
+# preprocess glove embedding, for lstm
 def processe_sst_data():
 
     if os.path.exists('./sst/embedding.pt'):
@@ -95,7 +96,6 @@ def processe_sst_data():
         json.dump(vocab2id, f)
     
     print('Save raw data...')
-    # 保存原数据
     for type in all_type:
         with open(f'sst/{type}_raw.txt','w',encoding='utf-8') as f:
             lines = []
@@ -104,7 +104,6 @@ def processe_sst_data():
             f.writelines('\n'.join(lines))
     
     print('Save processed data...')
-    # 保存ids
     for type in all_type:
         with open(f'sst/{type}_idx.txt','w',encoding='utf-8') as f:
             lines = []
