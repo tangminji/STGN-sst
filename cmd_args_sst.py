@@ -68,7 +68,7 @@ parser.add_argument('--num_class', default=5, type=int, choices=[2,5],
 parser.add_argument('--q', default=0.7, type=float, help='q for GCE')
 
 parser.add_argument('--model', type=str, default='bert-base-uncased', choices=['bert-base-uncased','bert-large-uncased'])
-parser.add_argument('--cache_dir', type=str, default='~/huggingface/huggingface')
+parser.add_argument('--cache_dir', type=str, default='')
 
 args = parser.parse_args()
 
