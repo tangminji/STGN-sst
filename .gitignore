@@ -151,3 +151,4 @@ output/
 *.rar
 *.tar
 *.pt
+!embedding.pt
