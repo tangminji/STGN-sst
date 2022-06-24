@@ -69,6 +69,7 @@ parser.add_argument('--q', default=0.7, type=float, help='q for GCE')
 
 parser.add_argument('--model', type=str, default='bert-base-uncased', choices=['bert-base-uncased','bert-large-uncased'])
 parser.add_argument('--cache_dir', type=str, default='')
+parser.add_argument('--use_lstm', action='store_true')
 
 args = parser.parse_args()
 
@@ -94,3 +95,10 @@ SST_CONFIG = {
     "CE": nn.CrossEntropyLoss(reduction='none'),
     "GCE": GCELoss(num_classes=args.num_class, reduction='none')
 }
+
+def use_lstm():
+    global args
+    args.lr = 0.001
+    args.epochs = 30
+    args.use_lstm = True
+    print(f'==> Use lstm with lr {args.lr}, epochs {args.epochs}, RMSProp')

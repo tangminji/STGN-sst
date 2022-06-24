@@ -68,6 +68,7 @@ def processe_sst_data():
     label, words = getsstdata()
 
     print('Consturct the Vocab dictionary...')
+    # You should prepare glove embeddings for lstm
     cache_dir = './glove'
     glove = GloVe(name='840B',dim=300,cache=cache_dir)
     sentence = sum(words.values(),[])
