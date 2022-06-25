@@ -298,8 +298,7 @@ def main(params):
             param.register_hook(hook_fn_parameter)
 
     cudnn.benchmark = True
-    # For LSTM
-    # optimizer = torch.optim.RMSprop(parameters, lr=args.lr, alpha=args.decay, weight_decay=args.weight_decay)
+
     # For Bert
     optimizer = torch.optim.Adam(parameters, lr=args.lr)
 
