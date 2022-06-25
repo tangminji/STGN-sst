@@ -57,8 +57,8 @@ parser.add_argument('--data_path', type=str, default='data/sst', help='the data 
 parser.add_argument('--dropout',type=float, default=0.5, help='dropout=0,0.5')
 parser.add_argument('--lr', type=float, default=1e-5, help='learning rate')
 
-parser.add_argument('--num_class', default=5, type=int, choices=[2,5], 
-    help='2 for SST-binary, 5 for SST-fine')
+parser.add_argument('--num_class', default=5, type=int, choices=[5], 
+    help='5 for SST-fine, only accept 5 now')
 parser.add_argument('--q', default=0.7, type=float, help='q for GCE')
 
 parser.add_argument('--model', type=str, default='bert-base-uncased', choices=['bert-base-uncased','bert-large-uncased'])

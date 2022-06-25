@@ -2,6 +2,7 @@
 
 ## Models
 + BERT  bert-base-uncased, batch_size=32, epochs=10, Adam(lr=1e-5)
+  + tesla_v100-sxm2-16gb    0.2h/run;   for GMMP:  0.8h/run.
 
 ## Files
 + cmd_args_sst.py            The command arguments.
@@ -9,7 +10,6 @@
 + data/
     + sst_dataset.py         Dataloader and Models for BERT.
     + sst/                   SST Dataset for 5-class classification.
-    + sst-2/                 SST Dataset for 2-class classification.
 + common/                    Useful codes.
 + choose_params/             Best params for BERT.
 
@@ -54,3 +54,5 @@ You can change arguments for different experiments.
 + noise_rate
     + For `'base'`, you can choose `[0.0, 0.1, 0.2, 0.4, 0.6]`.
     + For other methods, you can choose `[0.1, 0.2, 0.4, 0.6]`.
++ seed (i)
+    + You may try many different seeds to analyse the method performance, since the seeds make a difference on the results(peak test acc). For example, you can choose `[0, 1, 2, 3, 4]`.
