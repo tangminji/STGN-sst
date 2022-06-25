@@ -90,11 +90,6 @@ class SSTDataset(Dataset):
         noisy = self.noisy_label[index]
         return X, noisy, y, index
 
-# # words, length, labels, gt, index
-# def fn(data):
-#     words, labels, gt, index = zip(*data)
-#     return pad_sequence(words), list(map(len,words)), torch.tensor(labels), torch.tensor(gt), torch.tensor(index)
-
 def load_sst_data(path, raw=False):
     words, labels = [],[]
     with open(path, "r", encoding="utf-8") as f:

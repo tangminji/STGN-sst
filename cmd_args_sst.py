@@ -51,25 +51,18 @@ parser.add_argument('--mode', type=str, default='no_GN',
 # num_class=5, batch_size=32 epoch=128
 # set exp_name with ['base','GCE','SLN','STGN'] to change the method
 
-# For lstm, you need to change:
-# epochs=30, lr=0.001, use RMSProp optimizer instead of Adam
-
 parser.add_argument('--batch_size', type=int, default=32, help='input batch size for training') 
-# 30 for lstm
 parser.add_argument('--epochs', type=int, default=10, help='number of epochs to train')
 parser.add_argument('--data_path', type=str, default='data/sst', help='the data and embedding path')
-parser.add_argument('--hidden_size',type=int, default=168, help='hidden_size of LSTM')
 parser.add_argument('--dropout',type=float, default=0.5, help='dropout=0,0.5')
-parser.add_argument('--lr', type=float, default=1e-5, help='learning rate') # 0.001 for lstm
-parser.add_argument('--decay', type=float, default=0.9, help='decay rate of RMSProp')
-parser.add_argument('--weight_decay', type=float, default=0.0001, help='weight decay')
-parser.add_argument('--num_class', default=5, type=int, choices=[2,5], 
-    help='2 for SST-binary, 5 for SST-fine')
+parser.add_argument('--lr', type=float, default=1e-5, help='learning rate')
+
+parser.add_argument('--num_class', default=5, type=int, choices=[5], 
+    help='5 for SST-fine, only accept 5 now')
 parser.add_argument('--q', default=0.7, type=float, help='q for GCE')
 
 parser.add_argument('--model', type=str, default='bert-base-uncased', choices=['bert-base-uncased','bert-large-uncased'])
 parser.add_argument('--cache_dir', type=str, default='')
-parser.add_argument('--use_lstm', action='store_true')
 
 args = parser.parse_args()
 
@@ -95,10 +88,3 @@ SST_CONFIG = {
     "CE": nn.CrossEntropyLoss(reduction='none'),
     "GCE": GCELoss(num_classes=args.num_class, reduction='none')
 }
-
-def use_lstm():
-    global args
-    args.lr = 0.001
-    args.epochs = 30
-    args.use_lstm = True
-    print(f'==> Use lstm with lr {args.lr}, epochs {args.epochs}, RMSProp')
