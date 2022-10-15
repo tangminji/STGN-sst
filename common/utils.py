@@ -117,8 +117,6 @@ def generate_log_dir_hyp(args, ITERATION):
             raise Exception(error)
     else:
         #https://blog.csdn.net/webmater2320/article/details/105831920
-        #/users6/ttwu/.local/lib/python3.7/site-packages/tensorboard_logger/
-        #/home/zhh/anaconda3/lib/python3.8/site-packages/tensorboard_logger/
         tensorboard_logger.clean_default_logger()
         configure(log_pth, flush_secs=10)
 
@@ -203,15 +201,18 @@ def hook_fn_moutput(grad):
 
 def hook_fn_random_walk(grad):
     if args.sigma > 0:
-        args.sigma_dyn[args.index] = torch.add(args.sigma_dyn[args.index].data, args.sign_loss+args.sign_forgetting_events,
-                                               alpha=args.lr_sig).detach()
-        # Clamp perturb variance within certain bounds
-        if args.skip_clamp_param is False:
-            # Project the sigma's to be within certain range
-            args.sigma_dyn.data = args.sigma_dyn.data.clamp_(
-                min=0,
-                max=args.sig_max)
+        
+        if not args.know_clean:
+            args.sigma_dyn[args.index] = torch.add(args.sigma_dyn[args.index].data, args.sign_loss+args.sign_forgetting_events,
+                                                alpha=args.lr_sig).detach()
+            # Clamp perturb variance within certain bounds
+            if args.skip_clamp_param is False:
+                # Project the sigma's to be within certain range
+                args.sigma_dyn.data = args.sigma_dyn.data.clamp_(
+                    min=0,
+                    max=args.sig_max)
 
+        # torch.rand 均匀分布
         perturb = torch.div(args.sigma_dyn[args.index].reshape((-1, 1)) * (torch.rand(grad.size()) - 0.5).to(
             args.device), args.sm)
         perturb.data = perturb.data.clamp_(

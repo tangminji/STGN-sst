@@ -9,11 +9,6 @@ import os
 os.environ['MKL_THREADING_LAYER'] = 'GNU'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import numpy as np
-from hyperopt import Trials
-from hyperopt import fmin
-from hyperopt import hp
-from hyperopt import tpe
-from hyperopt import space_eval
 
 from cmd_args_sst import args
 
@@ -52,13 +47,13 @@ def get_trials(fixed, space, MAX_EVALS):
         params.update(fixed)
         yield params
 
-# 自己设定要枚举的实验，每个实验只做一次
+# enum settings which run once
 
 if __name__ == '__main__':
 
     assert args.dataset == "SST"
 
-    MAX_EVALS = 10  # TODO 设置轮次
+    MAX_EVALS = 10
 
     fixed = {
 
@@ -78,7 +73,22 @@ if __name__ == '__main__':
     # --lr_sig 1e-4 \ #can be obtained by sigma
 
     if 'STGN' in args.exp_name:
+        # e.g:
+        # {"q":0.2, "avg_steps": 20, "forget_times": 2.0, "ratio_l": 0.5, "sigma": 0.005, "times": 10}
         # 调sigma best sigma 1e-2(数据上选择了1e-3)
+        fixed = {
+            "ratio_l": 0.5,
+            "forget_times": 2,
+            "avg_steps": 20,
+        }
+        space = {
+            'sigma': [],
+            'times': []
+        }
+        for sigma in [1e-3,5e-3,1e-2]:
+            for times in [10, 20]:
+                space['sigma'].append(sigma)
+                space['times'].append(times)
         # times=20比times>20好
         # fixed = {
         #     'forget_times': 3,
@@ -107,16 +117,19 @@ if __name__ == '__main__':
         #         space['times'].append(times)
 
         # 调 forget_times
-        fixed = {
-            'ratio_l': 0.5,
-            'avg_steps': 20,
-            'sigma': 0.01,
-            'times': 20,
-        }
-        space = {
-            'forget_times': [1, 2, 3, 4],
-        }
+        # fixed = {
+        #     'ratio_l': 0.5,
+        #     'avg_steps': 20,
+        #     'sigma': 0.01,
+        #     'times': 20,
+        # }
+        # space = {
+        #     'forget_times': [1, 2, 3, 4],
+        # }
 
+        #  "avg_steps": 20, "forget_times": 2.0, "ratio_l": 0.5, "sigma": 0.005, "times": 10
+        # "avg_steps": 20, "forget_times": 2.0, "ratio_l": 0.5, "sigma": 0.005, "times": 10
+        
 
     if 'GCE' in args.exp_name:
         # space = {

@@ -142,6 +142,19 @@ dmypy.json
 *.err
 output/
 /*.json
+hy/
+*backup*
+*old*
+todo.md
+
+# configure file
+config.json
+
+# CIFAR data (TODO)
+CIFAR10/
+CIFAR100/
+cifar10*.py
+cifar100*.py
 
 # ipynb notebook
 *.ipynb

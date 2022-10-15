@@ -149,6 +149,7 @@ def generate_noisy_labels(args):
     train_noisy = []
     for i in range(total_train):
         if i in noisy_ind: #这里要考虑5分类问题
+            # random.randint(lower,upper) [lower,upper] 都可能会取到
             noisy = random.randint(0,args.num_class-2) #噪声类别 0~x-1,x+1~k-1
             if noisy >= train_labels[i]:
                 noisy += 1

@@ -1,7 +1,7 @@
 import argparse
 
 
-# 快速创建脚本
+# Generate shells for sst-2
 nrun_shell='''#!/bin/bash
             
 #SBATCH -J nrun{noise_rate}

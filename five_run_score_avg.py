@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 # Author: jlgao HIT-SCIR
 import os
-import re
 import numpy
-
 
 def cal_avg(path,reverse=True,top3=False,choose=[]):
     histo = []
@@ -48,7 +46,11 @@ def cal_avg(path,reverse=True,top3=False,choose=[]):
 if __name__ == '__main__':
     print("===> Seed 0,1,2 avg")
 
+    cal_avg('../sst-bert-output/ab_l/SST_STGN/nr0.05/ratio_l0', reverse=True)
+    cal_avg('../sst-bert-output/ab_l/SST_STGN/nr0.05/ratio_l0.5', reverse=True)
+    cal_avg('../sst-bert-output/ab_l/SST_STGN/nr0.05/ratio_l1', reverse=True)
     
+    # cal_avg('../sst-bert-output/nrun/SST_STGN/nr0.2', reverse=True)
 
     # cal_avg('nrun/SST_base/nr0.0', reverse=True)
     # cal_avg('nrun/SST_base/nr0.2', reverse=True)
@@ -63,9 +65,9 @@ if __name__ == '__main__':
     # cal_avg('nrun/SST_GCE/nr0.4', reverse=True)
     # cal_avg('nrun/SST_GCE/nr0.6', reverse=True)
 
-    cal_avg('nrun/SST_STGN_GCE/nr0.2', reverse=True) #q=0.7
-    cal_avg('nrun/SST_STGN_GCE/nr0.4', reverse=True)
-    cal_avg('nrun/SST_STGN_GCE/nr0.6', reverse=True)
+    # cal_avg('nrun/SST_STGN_GCE/nr0.2', reverse=True) #q=0.7
+    # cal_avg('nrun/SST_STGN_GCE/nr0.4', reverse=True)
+    # cal_avg('nrun/SST_STGN_GCE/nr0.6', reverse=True)
 
     # cal_avg('nrun/SST_STGN/nr0.2', reverse=True)
     # cal_avg('nrun/SST_STGN/nr0.4', reverse=True)
@@ -134,9 +136,9 @@ if __name__ == '__main__':
     # cal_avg('nrun/SST_GCE/nr0.4', reverse=True,top3=True)
     # cal_avg('nrun/SST_GCE/nr0.6', reverse=True,top3=True)
 
-    cal_avg('nrun/SST_STGN_GCE/nr0.2', reverse=True,top3=True) #q=0.7
-    cal_avg('nrun/SST_STGN_GCE/nr0.4', reverse=True,top3=True)
-    cal_avg('nrun/SST_STGN_GCE/nr0.6', reverse=True,top3=True)
+    # cal_avg('nrun/SST_STGN_GCE/nr0.2', reverse=True,top3=True) #q=0.7
+    # cal_avg('nrun/SST_STGN_GCE/nr0.4', reverse=True,top3=True)
+    # cal_avg('nrun/SST_STGN_GCE/nr0.6', reverse=True,top3=True)
 
     # cal_avg('nrun/SST_STGN/nr0.2', reverse=True,top3=True, choose=['seed0','seed2','seed3'])
     # cal_avg('nrun/SST_STGN/nr0.4', reverse=True,top3=True)

@@ -1,7 +1,6 @@
-import argparse
 
 
-# 快速创建脚本
+# Gen shells for sst-5
 nrun_shell='''#!/bin/bash
             
 #SBATCH -J nrun{noise_rate}
@@ -10,8 +9,8 @@ nrun_shell='''#!/bin/bash
 #SBATCH --gres gpu:tesla_v100-sxm2-16gb:1
 #SBATCH -t 10:00:00
 #SBATCH --mem 20240
-#SBATCH -e output/nrun{noise_rate}.err
-#SBATCH -o output/nrun{noise_rate}.txt
+#SBATCH -e ../sst-bert-output/output/nrun{noise_rate}.err
+#SBATCH -o ../sst-bert-output/output/nrun{noise_rate}.txt
 
 source ~/.bashrc
 conda activate base
@@ -25,7 +24,7 @@ python tm_train_hy_nruns.py \\
   --dataset SST \\
   --noise_rate $noise_rate \\
   --seed $i \\
-  --exp_name nrun/SST_$method/nr$noise_rate/seed$i \\
+  --exp_name ../sst-bert-output/nrun/SST_$method/nr$noise_rate/seed$i \\
   --params_path best_params$noise_rate.json \\
   --out_tmp sst_out_tmp.json \\
   --sub_script sbatch_sst_hy_sub.sh
@@ -40,8 +39,8 @@ hy_shell='''#!/bin/bash
 #SBATCH --gres gpu:tesla_v100-sxm2-16gb:1
 #SBATCH -t 6:00:00
 #SBATCH --mem 20240
-#SBATCH -o output/{method}_hy{noise_rate}.out
-#SBATCH -e output/{method}_hy{noise_rate}.err
+#SBATCH -o ../sst-bert-output/output/{method}_hy{noise_rate}.out
+#SBATCH -e ../sst-bert-output/output/{method}_hy{noise_rate}.err
 
 
 source ~/.bashrc
@@ -55,7 +54,7 @@ python tm_train_hy_params.py \\
 --dataset SST \\
 --noise_rate $noise_rate \\
 --seed $i \\
---exp_name hy/SST_$method/nr$noise_rate/ \\
+--exp_name ../sst-bert-output/hy/SST_$method/nr$noise_rate/ \\
 --params_path sst_params$noise_rate.json \\
 --out_tmp sst_out_tmp$noise_rate.json \\
 --sub_script sbatch_sst_hy_sub$noise_rate.sh
@@ -71,7 +70,7 @@ python tm_train_hy_sub.py \\
 --dataset SST \\
 --noise_rate $noise_rate \\
 --seed $i \\
---exp_name hy/SST_$method/nr$noise_rate/ \\
+--exp_name ../sst-bert-output/hy/SST_$method/nr$noise_rate/ \\
 --params_path sst_params$noise_rate.json \\
 --out_tmp sst_out_tmp$noise_rate.json \\
 --sub_script sbatch_sst_hy_sub$noise_rate.sh
@@ -85,8 +84,8 @@ enum_shell='''#!/bin/bash
 #SBATCH --gres gpu:tesla_v100-sxm2-16gb:1
 #SBATCH -t 6:00:00
 #SBATCH --mem 20240
-#SBATCH -o output/{method}_en{noise_rate}.out
-#SBATCH -e output/{method}_en{noise_rate}.err
+#SBATCH -o ../sst-bert-output/output/{method}_en{noise_rate}.out
+#SBATCH -e ../sst-bert-output/output/{method}_en{noise_rate}.err
 
 
 source ~/.bashrc
@@ -100,7 +99,7 @@ python tm_train_enum.py \\
 --dataset SST \\
 --noise_rate $noise_rate \\
 --seed $i \\
---exp_name enum/SST_$method/nr$noise_rate/ \\
+--exp_name ../sst-bert-output/enum/SST_$method/nr$noise_rate/ \\
 --params_path sst_em_params$noise_rate.json \\
 --out_tmp sst_em_out_tmp$noise_rate.json \\
 --sub_script sbatch_sst_em_sub$noise_rate.sh
@@ -116,7 +115,7 @@ python tm_train_hy_sub.py \\
 --dataset SST \\
 --noise_rate $noise_rate \\
 --seed $i \\
---exp_name enum/SST_$method/nr$noise_rate/ \\
+--exp_name ../sst-bert-output/enum/SST_$method/nr$noise_rate/ \\
 --params_path sst_em_params$noise_rate.json \\
 --out_tmp sst_em_out_tmp$noise_rate.json \\
 --sub_script sbatch_sst_em_sub$noise_rate.sh
