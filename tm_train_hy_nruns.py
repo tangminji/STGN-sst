@@ -16,9 +16,9 @@ import numpy as np
 from torch.nn.utils import clip_grad_norm_
 from data.sst_dataset import get_sst_train_and_val_loader,get_SST_model_and_loss_criterion
 from data.glue_dataset import get_glue_train_and_val_loader
-from data.cifar10_dataset import get_cifar10_dataset, \
-    get_CIFAR10_model_and_loss_criterion, get_mini_cifar10_dataset
-from data.cifar100_dataset import get_cifar100_dataset, get_CIFAR100_model_and_loss_criterion
+# from data.cifar10_dataset import get_cifar10_dataset, \
+#     get_CIFAR10_model_and_loss_criterion, get_mini_cifar10_dataset
+# from data.cifar100_dataset import get_cifar100_dataset, get_CIFAR100_model_and_loss_criterion
 import json
 from hyperopt import STATUS_OK
 import csv
@@ -37,9 +37,9 @@ MD_CLASSES = {
     'MNLI': (get_glue_train_and_val_loader, get_SST_model_and_loss_criterion),
     'QQP': (get_glue_train_and_val_loader, get_SST_model_and_loss_criterion),
 
-    'CIFAR-10_5K':(get_mini_cifar10_dataset, get_CIFAR10_model_and_loss_criterion),
-    'CIFAR10':(get_cifar10_dataset, get_CIFAR10_model_and_loss_criterion),
-    'CIFAR-100':(get_cifar100_dataset, get_CIFAR100_model_and_loss_criterion),
+    # 'CIFAR-10_5K':(get_mini_cifar10_dataset, get_CIFAR10_model_and_loss_criterion),
+    # 'CIFAR10':(get_cifar10_dataset, get_CIFAR10_model_and_loss_criterion),
+    # 'CIFAR-100':(get_cifar100_dataset, get_CIFAR100_model_and_loss_criterion),
 }
 
 def save_predict(save_dir, predict, epoch):
@@ -332,6 +332,9 @@ def main(params):
         params['times'] = args.times
     if 'forget_times' in args.exp_name:
         params['forget_times'] = args.forget_times
+    if 'ab_q' in args.exp_name:
+        params['q'] = args.q
+
     # For STGN
     #TODO: automatic adjustment (sig_max, lr_sig)
     if 'STGN' in args.exp_name:
@@ -354,7 +357,6 @@ def main(params):
     
     if not os.path.exists(args.exp_name):
         os.makedirs(args.exp_name)
-    #args.logpath = os.path.join(args.exp_name, 'log.txt')
     args.logpath = args.exp_name + '/' + 'log.txt'
     
     args.log_dir = os.path.join(os.getcwd(), args.exp_name)

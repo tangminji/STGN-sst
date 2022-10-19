@@ -3,7 +3,7 @@
 import os
 import numpy
 
-def cal_avg(path,reverse=True,top3=False,choose=[]):
+def cal_avg(path,reverse=True,top3=True,choose=[]):
     histo = []
     for seed_n in os.listdir(path):
         # res_path = os.path.join(path, "%s/weights" % (seed_n))
@@ -46,41 +46,61 @@ def cal_avg(path,reverse=True,top3=False,choose=[]):
 if __name__ == '__main__':
     print("===> Seed 0,1,2 avg")
 
-    cal_avg('../sst-bert-output/ab_l/SST_STGN/nr0.05/ratio_l0', reverse=True)
-    cal_avg('../sst-bert-output/ab_l/SST_STGN/nr0.05/ratio_l0.5', reverse=True)
-    cal_avg('../sst-bert-output/ab_l/SST_STGN/nr0.05/ratio_l1', reverse=True)
+    # cal_avg('../sst-bert-output/ab_l/SST_STGN/nr0.05/ratio_l0', reverse=True)
+    # cal_avg('../sst-bert-output/ab_l/SST_STGN/nr0.05/ratio_l0.5', reverse=True)
+    # cal_avg('../sst-bert-output/ab_l/SST_STGN/nr0.05/ratio_l1', reverse=True)
     
     # cal_avg('../sst-bert-output/nrun/SST_STGN/nr0.2', reverse=True)
 
-    # cal_avg('nrun/SST_base/nr0.0', reverse=True)
-    # cal_avg('nrun/SST_base/nr0.2', reverse=True)
-    # cal_avg('nrun/SST_base/nr0.4', reverse=True)
-    # cal_avg('nrun/SST_base/nr0.6', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_base/nr0.0', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_base/nr0.2', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_base/nr0.4', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_base/nr0.6', reverse=True)
     
-    # cal_avg('nrun/SST_SLN/nr0.2', reverse=True)
-    # cal_avg('nrun/SST_SLN/nr0.4', reverse=True)
-    # cal_avg('nrun/SST_SLN/nr0.6', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_SLN/nr0.2', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_SLN/nr0.4', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_SLN/nr0.6', reverse=True)
 
-    # cal_avg('nrun/SST_GCE/nr0.2', reverse=True) #q=0.7
-    # cal_avg('nrun/SST_GCE/nr0.4', reverse=True)
-    # cal_avg('nrun/SST_GCE/nr0.6', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_GCE/nr0.2', reverse=True) #q=0.7
+    cal_avg('../sst-bert-output/nrun/SST_GCE/nr0.4', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_GCE/nr0.6', reverse=True)
 
-    # cal_avg('nrun/SST_STGN_GCE/nr0.2', reverse=True) #q=0.7
-    # cal_avg('nrun/SST_STGN_GCE/nr0.4', reverse=True)
-    # cal_avg('nrun/SST_STGN_GCE/nr0.6', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_STGN_GCE/nr0.2', reverse=True) #q=0.7
+    cal_avg('../sst-bert-output/nrun/SST_STGN_GCE/nr0.4', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_STGN_GCE/nr0.6', reverse=True)
 
-    # cal_avg('nrun/SST_STGN/nr0.2', reverse=True)
-    # cal_avg('nrun/SST_STGN/nr0.4', reverse=True)
-    # cal_avg('nrun/SST_STGN/nr0.6', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_STGN/nr0.2', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_STGN/nr0.4', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_STGN/nr0.6', reverse=True)
 
-    # cal_avg('nrun/SST_GNMO/nr0.2', reverse=True)
-    # cal_avg('nrun/SST_GNMO/nr0.4', reverse=True)
-    # cal_avg('nrun/SST_GNMO/nr0.6', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_GNMO/nr0.2', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_GNMO/nr0.4', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_GNMO/nr0.6', reverse=True)
 
-    # cal_avg('nrun/SST_GNMP/nr0.2', reverse=True)
-    # cal_avg('nrun/SST_GNMP/nr0.4', reverse=True)
-    # cal_avg('nrun/SST_GNMP/nr0.6', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_GNMP/nr0.2', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_GNMP/nr0.4', reverse=True)
+    cal_avg('../sst-bert-output/nrun/SST_GNMP/nr0.6', reverse=True)
     
+    # cal_avg('../sst-bert-output/nrun/SST_GCE-ab_q/nr0.2-q0.3', reverse=True)
+    # cal_avg('../sst-bert-output/nrun/SST_GCE-ab_q/nr0.4-q0.3', reverse=True)
+    # cal_avg('../sst-bert-output/nrun/SST_GCE-ab_q/nr0.6-q0.3', reverse=True)
+
+    # cal_avg('../sst-bert-output/nrun/SST_STGN/nr0.2-forget_times1-sigma5e-3-times10', reverse=True)
+    # cal_avg('../sst-bert-output/nrun/SST_STGN/nr0.4-forget_times2-sigma1e-2-times20', reverse=True)
+    # cal_avg('../sst-bert-output/nrun/SST_STGN/nr0.6-forget_times3-sigma2e-2-times10', reverse=True)
+
+    # cal_avg('../sst-bert-output/nrun/SST_GCE-ab_q/nr0.2-q0.1', reverse=True)
+    # cal_avg('../sst-bert-output/nrun/SST_GCE-ab_q/nr0.2-q0.9', reverse=True)
+    # cal_avg('../sst-bert-output/nrun/SST_GCE-ab_q/nr0.4-q0.1', reverse=True)
+    # cal_avg('../sst-bert-output/nrun/SST_GCE-ab_q/nr0.4-q0.9', reverse=True)
+
+    # cal_avg('../sst-bert-output/nrun/SST_STGN/nr0.2-forget_times1-sigma1e-2-times20', reverse=True)
+    # cal_avg('../sst-bert-output/nrun/SST_STGN/nr0.4-forget_times3-sigma1e-2-times20', reverse=True)
+
+    # cal_avg('../sst-bert-output/nrun/SST_SLN/nr0.2-sigma0.2', reverse=True)
+    # cal_avg('../sst-bert-output/nrun/SST_SLN/nr0.2-sigma0.5', reverse=True)
+    # cal_avg('../sst-bert-output/nrun/SST_SLN/nr0.2-sigma0.8', reverse=True)
+
     # cal_avg('nrun/SST_SLN-sigma0.1/nr0.2')
     # cal_avg('nrun/SST_SLN-sigma0.2/nr0.2')
     # cal_avg('nrun/SST_SLN-sigma0.5/nr0.2')

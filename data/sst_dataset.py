@@ -1,5 +1,4 @@
 import os
-from numpy import random
 from torch.utils.data import DataLoader,Dataset
 from cmd_args_sst import args, SST_CONFIG
 import torch.nn as nn
@@ -144,13 +143,14 @@ def generate_noisy_labels(args):
     noise_rate = args.noise_rate
     total_train = len(train_labels)
     # 噪声样本, 这里是二分类，如果是五分类就复杂些
-    noisy_ind = np.random.choice(total_train, int(total_train*noise_rate), False).tolist()
+
+    rng = np.random.RandomState(42)
+    noisy_ind = rng.choice(total_train, int(total_train*noise_rate), False).tolist()
     noisy_ind.sort()
     train_noisy = []
     for i in range(total_train):
         if i in noisy_ind: #这里要考虑5分类问题
-            # random.randint(lower,upper) [lower,upper] 都可能会取到
-            noisy = random.randint(0,args.num_class-2) #噪声类别 0~x-1,x+1~k-1
+            noisy = rng.randint(0,args.num_class-1)
             if noisy >= train_labels[i]:
                 noisy += 1
             train_noisy.append(noisy) 
