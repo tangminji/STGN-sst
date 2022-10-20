@@ -16,9 +16,6 @@ import numpy as np
 from torch.nn.utils import clip_grad_norm_
 from data.sst_dataset import get_sst_train_and_val_loader,get_SST_model_and_loss_criterion
 from data.glue_dataset import get_glue_train_and_val_loader
-from data.cifar10_dataset import get_cifar10_dataset, \
-    get_CIFAR10_model_and_loss_criterion, get_mini_cifar10_dataset
-from data.cifar100_dataset import get_cifar100_dataset, get_CIFAR100_model_and_loss_criterion
 import json
 from hyperopt import STATUS_OK
 import csv
@@ -36,10 +33,6 @@ MD_CLASSES = {
     'SST': (get_sst_train_and_val_loader, get_SST_model_and_loss_criterion),
     'MNLI': (get_glue_train_and_val_loader, get_SST_model_and_loss_criterion),
     'QQP': (get_glue_train_and_val_loader, get_SST_model_and_loss_criterion),
-
-    'CIFAR-10_5K':(get_mini_cifar10_dataset, get_CIFAR10_model_and_loss_criterion),
-    'CIFAR10':(get_cifar10_dataset, get_CIFAR10_model_and_loss_criterion),
-    'CIFAR-100':(get_cifar100_dataset, get_CIFAR100_model_and_loss_criterion),
 }
 
 def save_predict(save_dir, predict, epoch):
@@ -89,16 +82,9 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
         global_iter += 1
         # similar to global variable
         args.index = index
-        # if len(target.size()) == 1:
-        #     target = torch.zeros(target.size(0), args.num_class).scatter_(1, target.view(-1, 1),
-        #                                                                   1)  # convert label to one-hot
         
-        if "CIFAR" not in args.dataset:
-            data = {k:v.to(args.device) for k,v in data.items()}
-            output = model(**data)['logits']
-        else:
-            data = data.to(args.device)
-            output = model(data)
+        data = {k:v.to(args.device) for k,v in data.items()}
+        output = model(**data)['logits']
         target = target.to(args.device)
 
         args.sm = F.softmax(output)
@@ -138,12 +124,8 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
 
                 #when to update, since forgetting times of any sample reaches to args.forget_times
 
-                # if (args.forgetting>args.forget_times).any():
                 times_ge_or_not = torch.ge(args.forgetting[index], args.forget_times).detach()
                 if times_ge_or_not.any():
-                # if args.forget_times in args.forgetting:
-                #     #greater or equal
-                #     times_ge_or_not = torch.ge(args.forgetting[index], args.forget_times).detach()
                     args.sign_forgetting_events = ((1-args.ratio_l)*args.total) * torch.tensor([1 if t == True else -1 for t in times_ge_or_not]).to(args.device)
                     args.sign_loss = (args.ratio_l * args.total) * torch.sign(loss - k1).to(args.device)
                 else:
@@ -166,18 +148,6 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
         args.sm = None
 
         # Measure accuracy and record loss
-        # train_loss.update(loss.item(), data.size(0))
-        # pred = output.argmax(dim=1, keepdim=True)
-        # # noise & disturbance ground-truth index
-        # gt = [1 if target[i] == target_gt[i] else 0 for i in range(len(target))]
-        # fc = [1 if pred[i] == target[i] and gt[i] == 0 else 0 for i in range(len(target))]  # memorize noise label
-        # tc = [1 if pred[i] == target[i] and gt[i] == 1 else 0 for i in range(len(target))]  # learn clean label
-        # fcorrect.update(sum(fc) * (100.0 / len(fc)), len(fc))
-        # tcorrect.update(sum(tc) * (100.0 / len(tc)), len(tc))
-        # acc1 = compute_topk_accuracy(output, target, topk=(1,))
-        # correct.update(acc1[0].item(), data.size(0))
-
-        # Measure accuracy and record loss
         train_loss.update(loss.item(), target.size(0))
         pred = output.argmax(dim=1)
         # noise & disturbance ground-truth index
@@ -189,10 +159,6 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
         num = target.size(0)
         fcorrect.update(fc.sum().item() * (100.0 / num), num)
         tcorrect.update(tc.sum().item() * (100.0 / num), num)
-        # if(len(fc)>0):
-        #     fcorrect.update(fc.sum().item() * (100.0 / len(fc)), len(fc))
-        # if(len(tc)>0):
-        #     tcorrect.update(tc.sum().item() * (100.0 / len(tc)), len(tc))
         acc1 = compute_topk_accuracy(output, target, topk=(1,))
         correct.update(acc1[0].item(), target.size(0))
 
@@ -244,12 +210,8 @@ def validate(args, model, loader, criterion, epoch, logpath, mode='val'):
 
     with torch.no_grad():
         for i, (data, target, target_gt, _) in enumerate(loader):
-            if "CIFAR" not in args.dataset:
-                data = {k:v.to(args.device) for k,v in data.items()}
-                output = model(**data)['logits']
-            else:
-                data = data.to(args.device)
-                output = model(data)
+            data = {k:v.to(args.device) for k,v in data.items()}
+            output = model(**data)['logits']
             target = target.to(args.device)
             loss = criterion(output, target)
             loss = loss.mean()
@@ -282,41 +244,6 @@ def validate(args, model, loader, criterion, epoch, logpath, mode='val'):
     # Logging results on tensorboard
     log_value('{}/accuracy'.format(mode), correct.avg, step=epoch)
     return test_loss.avg, correct.avg
-
-# def save_data(args, net, train_loader, val_loader, test_loader):
-#     st = time.time()
-#     print(f'Save sentence labels and embbeding at {args.save_dir}')
-#     state = torch.load(os.path.join(args.save_dir,'net.pt'))
-#     net.load_state_dict(state)
-#     net.eval()
-#     loaders = {
-#         'train': train_loader,
-#         'val': val_loader,
-#         'test': test_loader,
-#     }
-#     with torch.no_grad():
-#         for type, loader in loaders.items():
-#             data_length = len(loader.dataset)
-#             embeds = torch.zeros(data_length, args.hidden_size)
-#             targets = torch.zeros(data_length, dtype=int)
-#             target_gts = torch.zeros(data_length, dtype=int)
-
-#             for data, length, target, target_gt, index in loader:
-#                 data = data.to(args.device)
-#                 embeds[index] = net.sentence_encode(data, length).cpu()
-#                 targets[index] = target
-#                 target_gts[index] = target_gt
-        
-#             # with open(f'{args.save_dir}/{type}_embed.txt', 'w') as f:
-#             #     for embed, target, target_gt in zip(embeds, targets, target_gts):
-#             #         f.write(f"{target}\t{target_gt}\t{','.join(map(str,embed.numpy().tolist()))}\n")
-#             torch.save({
-#                 'targets': targets,
-#                 'target_gt': target_gts,
-#                 'embed': embeds
-#             },os.path.join(args.save_dir,f'{type}_embed.pt'))
-#     ed = time.time()
-#     print(f'Sentence labels saved, {ed-st} sec used')
 
 def main(params):
     """Objective function for Hyperparameter Optimization"""

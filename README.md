@@ -4,6 +4,10 @@ source code and data for
 + [EMNLP2022] STGN: an Implicit Regularization Method for Learning with Noisy
 Labels in Natural Language Processing
 
+Note:
++ To reproduce the paper results, you can choose the stable version ['master/v5.0'](https://github.com/tangminji/STGN-sst/tree/v5.0). However, the noise on SST is not in strictly uniform distribution.
++ We will fix data with uniform distribution and adjust code, params in later versions.
+
 ## Models
 + BERT  bert-base-uncased, batch_size=32, epochs=10, Adam(lr=1e-5)
   + tesla_v100-sxm2-16gb    0.2h/run;   for GMMP:  0.8h/run.
@@ -16,6 +20,20 @@ Labels in Natural Language Processing
     + sst/                   SST Dataset for 5-class classification.
 + common/                    Useful codes.
 + choose_params/             Best params for BERT.
+
+## Before run
+You need to make sure the output folder exists. 
++ with sbatch:
+```shell
+mkdir -p ../sst-bert-output/output
+sbatch base.sh
+```
++ without sbatch:
+```shell
+mkdir -p ../sst-bert-output/output
+bash base.sh >../sst-bert-output/output/base.txt 2>../sst-bert-output/output/base.err
+```
+You can also use run it as a nohupping backgrounded job.
 
 ## Shell
 
