@@ -4,10 +4,7 @@ from torch.utils.data import DataLoader,Dataset
 from cmd_args_sst import args, SST_CONFIG
 import torch.nn as nn
 import torch
-from torch.nn.utils.rnn import pad_sequence
 import numpy as np
-
-
 import pytreebank
 import torch
 from transformers import BertTokenizer,BertConfig,BertForSequenceClassification
@@ -27,7 +24,7 @@ def get_binary_label(label):
         return 1
     raise ValueError("Invalid label")
 
-
+# Adapt from: https://github.com/munikarmanish/bert-sentiment/blob/master/bert_sentiment/data.py
 class SSTDataset(Dataset):
     """Configurable SST Dataset.
     
@@ -48,7 +45,7 @@ class SSTDataset(Dataset):
             binary: bool
                 If true, use binary labels. Else, use fine-grained.
         """
-        root = True # use root data only
+        root = True
         print(f"Loading SST {split} set")
         self.sst = sst[split]
 

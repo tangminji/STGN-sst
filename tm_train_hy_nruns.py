@@ -3,24 +3,30 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import time
 import torch
-import torch.optim as optim
 import torch.backends.cudnn as cudnn
 from common.utils import log, set_seed, generate_log_dir, AverageMeter, \
-    compute_topk_accuracy, checkpoint, log_intermediate_iteration_stats, log_stats, test
+    compute_topk_accuracy, log_intermediate_iteration_stats, log_stats
 from common.utils import hook_fn_random_walk,hook_fn_parameter,hook_fn_moutput
-from tqdm import tqdm
 from cmd_args_sst import args
 from tensorboard_logger import log_value
 import torch.nn.functional as F
 import numpy as np
 from torch.nn.utils import clip_grad_norm_
 from data.sst_dataset import get_sst_train_and_val_loader,get_SST_model_and_loss_criterion
+from data.glue_dataset import get_glue_train_and_val_loader
 import json
 from hyperopt import STATUS_OK
 import csv
 
+from sklearn.metrics import f1_score
+
+train_f1, dev_f1 = [], []
+macro_train_f1, macro_dev_f1 = [], []
+
 MD_CLASSES = {
-    'SST': (get_sst_train_and_val_loader, get_SST_model_and_loss_criterion)
+    'SST': (get_sst_train_and_val_loader, get_SST_model_and_loss_criterion),
+    'MNLI': (get_glue_train_and_val_loader, get_SST_model_and_loss_criterion),
+    'QQP': (get_glue_train_and_val_loader, get_SST_model_and_loss_criterion),
 }
 
 def save_predict(save_dir, predict, epoch):
@@ -58,13 +64,23 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
     predictions = torch.zeros(len(loader.dataset),args.num_class)
     #loss_lst = TDigest()
     loss_lst = []
+
+    pred_lst, target_lst = [],[]
+
+    if args.know_clean:
+        for i, (data, target, target_gt, index) in enumerate(loader):
+            target, target_gt = target.to(args.device), target_gt.to(args.device)
+            args.sigma_dyn[index] = (args.sig_max * (target!=target_gt).float()).detach()            
+
     for i, (data, target, target_gt, index) in enumerate(loader):
         global_iter += 1
         # similar to global variable
         args.index = index
-        data, target = {k:v.to(args.device) for k,v in data.items()}, target.to(args.device)
-
+        
+        data = {k:v.to(args.device) for k,v in data.items()}
         output = model(**data)['logits']
+        target = target.to(args.device)
+
         args.sm = F.softmax(output)
         
         # ADD
@@ -73,7 +89,7 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
         # SLN
         if args.mode == 'GN_on_label':
             onehot = F.one_hot(target.long(), args.num_class).float()
-            onehot += args.sigma*torch.randn(onehot.size()).to(args.device) # Add noise on label
+            onehot += args.sigma*torch.randn(onehot.size()).to(args.device)
             loss = -torch.sum(F.log_softmax(output, dim=1)*onehot, dim=1)
         else:
             if args.mode == 'GN_on_moutput':
@@ -82,7 +98,7 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
             elif args.mode == 'Random_walk':
                 output.register_hook(hook_fn_random_walk)
             loss = criterion(output, target)
-            if args.mode == 'Random_walk':
+            if args.mode == 'Random_walk' and not args.know_clean:
                 # TODO: element1: from loss perspective
                 # TODO: quantile
                 loss_lst.append(loss.detach().cpu().numpy().tolist())
@@ -103,7 +119,7 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
                 #when to update, since forgetting times of any sample reaches to args.forget_times
 
                 times_ge_or_not = torch.ge(args.forgetting[index], args.forget_times).detach()
-                if times_ge_or_not.any(): # Some samples forget too much times
+                if times_ge_or_not.any():
                     args.sign_forgetting_events = ((1-args.ratio_l)*args.total) * torch.tensor([1 if t == True else -1 for t in times_ge_or_not]).to(args.device)
                     args.sign_loss = (args.ratio_l * args.total) * torch.sign(loss - k1).to(args.device)
                 else:
@@ -111,7 +127,7 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
                     if args.ratio_l != 0:
                         args.sign_loss = torch.sign(loss - k1).to(args.device)
                     else:
-                        args.sign_loss = torch.tensor([0] * len(loss)).to(args.device)
+                        args.sign_loss = torch.tensor([0] * len(loss)).to(args.device)                    
 
         # ADD
         loss_parameters[index] = loss.detach().cpu()
@@ -143,17 +159,34 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
         if i % args.print_freq == 0:
             log_intermediate_iteration_stats(epoch, global_iter, train_loss, top1=correct)
 
+        if args.dataset in ["QQP"]:
+            pred_lst.append(pred.detach().cpu())
+            target_lst.append(target.cpu())
+
+    f1_txt = ""
+    if args.dataset in ["QQP"]:
+        pred_lst = torch.cat(pred_lst)
+        target_lst = torch.cat(target_lst)
+        f1 = f1_score(target_lst, pred_lst)
+        macro_f1 = f1_score(target_lst, pred_lst, average="macro")
+        log_value("train/f1", f1, step=epoch)
+        log_value("train/macro_f1", macro_f1, step=epoch)
+        f1_txt = ", F1:{}, Macro:{}".format(f1, macro_f1)
+        train_f1.append(f1)
+        macro_train_f1.append(macro_f1)
+        del pred_lst, target_lst
+
     # Print and log stats for the epoch
     log_value('train/loss', train_loss.avg, step=epoch)
-    log(logpath, 'Time for Train-Epoch-{}/{}:{:.1f}s Acc:{}, Loss:{}\n'.
-            format(epoch, args.epochs, time.time() - t0, correct.avg, train_loss.avg))
+    log(logpath, 'Time for Train-Epoch-{}/{}:{:.1f}s Acc:{}, Loss:{}{}\n'.
+            format(epoch, args.epochs, time.time() - t0, correct.avg, train_loss.avg, f1_txt))
 
     log_value('train/accuracy', correct.avg, step=epoch)
     log_value('train/true_correct_from_clean', tcorrect.avg, step=epoch)
     log_value('train/false_correct_from_noise_disturb', fcorrect.avg, step=epoch)
 
     save_loss(args.save_dir, loss_parameters, epoch)
-    save_predict(args.save_dir, predictions, epoch)
+    save_predict(args.save_dir, predictions, epoch)        
 
     return global_iter, train_loss.avg, correct.avg, tcorrect.avg, fcorrect.avg
 
@@ -166,56 +199,44 @@ def validate(args, model, loader, criterion, epoch, logpath, mode='val'):
     # switch to evaluate mode
     model.eval()
     t0 = time.time()
+    pred_lst, target_lst = [], []
+
     with torch.no_grad():
         for i, (data, target, target_gt, _) in enumerate(loader):
-            data, target = {k:v.to(args.device) for k,v in data.items()}, target.to(args.device)
+            data = {k:v.to(args.device) for k,v in data.items()}
             output = model(**data)['logits']
+            target = target.to(args.device)
             loss = criterion(output, target)
             loss = loss.mean()
             # measure accuracy and record loss
             test_loss.update(loss.item(), target.size(0))
             acc1 = compute_topk_accuracy(output, target, topk=(1,))
             correct.update(acc1[0].item(), target.size(0))
-    log(logpath, 'Time for {}-Epoch-{}/{}:{:.1f}s Acc:{}, Loss:{}\n'.format('Test'if mode=='test'else 'Val',
-                      epoch, args.epochs, time.time()-t0, correct.avg, test_loss.avg))
+
+            if args.dataset in ["QQP"]:
+                pred = output.argmax(dim=1) # no_grad
+                pred_lst.append(pred.cpu())
+                target_lst.append(target.cpu())
+
+    f1_txt = ""
+    if args.dataset in ["QQP"]:
+        pred_lst = torch.cat(pred_lst)
+        target_lst = torch.cat(target_lst)
+        f1 = f1_score(target_lst, pred_lst)
+        macro_f1 = f1_score(target_lst, pred_lst, average="macro")
+        log_value("train/f1", f1, step=epoch)
+        log_value("train/macro_f1", macro_f1, step=epoch)
+        f1_txt = ", F1:{}, Macro:{}".format(f1, macro_f1)
+        dev_f1.append(f1)
+        macro_dev_f1.append(macro_f1)
+        del pred_lst, target_lst    
+    
+    log(logpath, 'Time for {}-Epoch-{}/{}:{:.1f}s Acc:{}, Loss:{}{}\n'.format('Test'if mode=='test'else 'Val',
+                      epoch, args.epochs, time.time()-t0, correct.avg, test_loss.avg, f1_txt))
     log_value('{}/loss'.format(mode), test_loss.avg, step=epoch)
     # Logging results on tensorboard
     log_value('{}/accuracy'.format(mode), correct.avg, step=epoch)
     return test_loss.avg, correct.avg
-
-def save_data(args, net, train_loader, val_loader, test_loader):
-    st = time.time()
-    print(f'Save sentence labels and embbeding at {args.save_dir}')
-    state = torch.load(os.path.join(args.save_dir,'net.pt'))
-    net.load_state_dict(state)
-    net.eval()
-    loaders = {
-        'train': train_loader,
-        'val': val_loader,
-        'test': test_loader,
-    }
-    args.hidden_size = 768
-    with torch.no_grad():
-        for type, loader in loaders.items():
-            data_length = len(loader.dataset)
-            embeds = torch.zeros(data_length, args.hidden_size)
-            targets = torch.zeros(data_length, dtype=int)
-            target_gts = torch.zeros(data_length, dtype=int)
-
-            for data, target, target_gt, index in loader:
-                data = {k:v.to(args.device) for k,v in data.items()}
-                # get_sentence_output: pooled_output
-                embeds[index] = net.bert(**data)[1].cpu()
-                targets[index] = target
-                target_gts[index] = target_gt
-        
-            torch.save({
-                'targets': targets,
-                'target_gt': target_gts,
-                'embed': embeds
-            },os.path.join(args.save_dir,f'{type}_embed.pt'))
-    ed = time.time()
-    print(f'Sentence labels saved, {ed-st} sec used')
 
 def main(params):
     """Objective function for Hyperparameter Optimization"""
@@ -226,7 +247,12 @@ def main(params):
         params['sigma'] = args.sigma
     if 'ab_l' in args.exp_name:
         params['ratio_l'] = args.ratio_l
-    
+    if 'sigma' in args.exp_name:
+        params['sigma'] = args.sigma
+    if 'times' in args.exp_name:
+        params['times'] = args.times
+    if 'forget_times' in args.exp_name:
+        params['forget_times'] = args.forget_times
     # For STGN
     #TODO: automatic adjustment (sig_max, lr_sig)
     if 'STGN' in args.exp_name:
@@ -249,7 +275,6 @@ def main(params):
     
     if not os.path.exists(args.exp_name):
         os.makedirs(args.exp_name)
-
     args.logpath = args.exp_name + '/' + 'log.txt'
     
     args.log_dir = os.path.join(os.getcwd(), args.exp_name)
@@ -320,7 +345,9 @@ def main(params):
                                                                 global_iter, epoch, args.logpath)
 
         val_loss, val_acc = validate(args, net, val_loader, criterion_val, epoch, args.logpath, mode='val')
-        test_loss, test_acc = validate(args, net, test_loader, criterion_val, epoch, args.logpath, mode='test')
+        test_loss, test_acc = val_loss, val_acc
+        if test_loader is not None:
+            test_loss, test_acc = validate(args, net, test_loader, criterion_val, epoch, args.logpath, mode='test')
         # Save checkpoint.
         if val_acc > val_best:
             val_best = val_acc
@@ -329,7 +356,8 @@ def main(params):
 
         if epoch == 0:
             continue
-        res_lst.append((train_acc, tc_acc, fc_acc, test_acc, test_best, train_loss, test_loss))
+        # Record val_acc for MNLI
+        res_lst.append((train_acc, tc_acc, fc_acc, test_acc, test_best, train_loss, test_loss, val_acc))
 
         if len(noisy_ind)>0:
             log_stats(data=torch.tensor([args.sigma_dyn[i] for i in noisy_ind]),
@@ -350,12 +378,24 @@ def main(params):
         logwriter = csv.writer(logfile, delimiter=',')
         logwriter.writerows(res_lst)
     
-    stable_acc = sum([x[3] for x in res_lst[-5:]])/5 # test_acc during last 5 epochs
+    stable_acc = sum([x[3] for x in res_lst[-5:]])/5 # avg test acc for Last five epoch
 
     # Val_best Test_at_val_best Stable_test_acc
     with open(os.path.join(args.log_dir, 'best_results.txt'), 'w') as outfile:
         outfile.write(f'{val_best}\t{test_best}\t{stable_acc}')
     log(args.logpath, '\nBest Acc: {}\tVal Acc: {}\t Stable Acc:{}'.format(test_best,val_best,stable_acc))
+    
+    if args.dataset in ["MNLI"]:
+        stable_match_acc = sum([x[7] for x in res_lst[-5:]])/5
+        stable_mismatch_acc = stable_acc
+        log(args.logpath, '\nStable acc: Match: {}\tMismatch: {}'.format(stable_match_acc, stable_mismatch_acc))
+
+    if args.dataset in ["QQP"]:
+        best_dev_f1, best_macro_dev_f1 = max(dev_f1), max(macro_dev_f1)
+        stable_dev_f1, stable_macro_dev_f1 = sum(dev_f1[-5:])/5, sum(macro_dev_f1[-5:])/5
+        log(args.logpath, '\nBest F1: {}\t Macro: {}'.format(best_dev_f1, best_macro_dev_f1))
+        log(args.logpath, '\nStable F1: {}\t Macro: {}'.format(stable_dev_f1, stable_macro_dev_f1))
+
     log(args.logpath, '\nTotal Time: {:.1f}s.\n'.format(run_time))
 
     loss = - test_best
