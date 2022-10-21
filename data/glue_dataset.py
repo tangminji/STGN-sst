@@ -61,7 +61,7 @@ def get_glue_train_and_val_loader(args):
             mnli = datasets.load_dataset("glue","mnli")
             del mnli["test_matched"], mnli["test_mismatched"]
             mnli = mnli.map(mnli_process)
-            mnli.remove_columns_(["premise","hypothesis"])
+            mnli = mnli.remove_columns(["premise","hypothesis"])
             if not os.path.exists(folder):
                 os.makedirs(folder, exist_ok=True)
             mnli.save_to_disk(processed_path)
@@ -80,7 +80,7 @@ def get_glue_train_and_val_loader(args):
             qqp = datasets.load_dataset("glue","qqp")
             del qqp["test"]
             qqp = qqp.map(qqp_process)
-            qqp.remove_columns_(["question1","question2"])
+            qqp = qqp.remove_columns(["question1","question2"])
             if not os.path.exists(folder):
                 os.makedirs(folder, exist_ok=True)
             qqp.save_to_disk(processed_path)

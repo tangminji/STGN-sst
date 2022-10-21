@@ -12,10 +12,6 @@ def write_config(file="config.json", config={}):
 def load_config(file="config.json"):
     config = {
         "log_dir": "",
-        "CIFAR10_PATH": "data/", # path of data
-        "CIFAR10_LB_PATH": "data/CIFAR10/", # path of noisy label
-        "CIFAR100_PATH":"/data/", # path of data
-        "CIFAR100_LB_PATH": "data/CIFAR100/", # path of noisy label
         "cache_dir": ""
     }
     if not os.path.exists(file):
@@ -35,7 +31,7 @@ parser.add_argument('--out_tmp', default='sst_out_tmp.json', type=str)
 parser.add_argument('--params_path', default='sst_params.json', type=str)
 parser.add_argument('--log_dir', default=config["log_dir"], type=str)
 
-parser.add_argument('--dataset', default='SST', type=str, help="Model type selected in the list: [MNIST, CIFAR10, CIFAR-100, CIFAR-10_5K, UTKFACE, SST, MNLI, QQP]")
+parser.add_argument('--dataset', default='SST', type=str, help="Model type selected in the list: [SST, MNLI, QQP]")
 parser.add_argument('--loss', default='CE', type=str, help="loss type")
 parser.add_argument('--lr_sig', type=float, default=0.005, help='learning rate for sigma iteration')
 parser.add_argument('--noise_mode', type=str, default='sym', help='Noise mode in the list: [sym, asym, dependent]')
@@ -48,7 +44,7 @@ parser.add_argument('--patience', type=int, default=3, help='patience for increa
 parser.add_argument('--times', type=float, default=3.0, help='increase perturb by times')
 parser.add_argument('--avg_steps', type=int, default=10, help='step nums at most to calculate k1')
 parser.add_argument('--adjustimes', type=int, default=10, help='Maximum number of adjustments')
-parser.add_argument('--sigma', type=float, default=0.05, help='STD of Gaussian noise')#label0.5/para5e-3/moutput5e-3
+parser.add_argument('--sigma', type=float, default=0.05, help='STD of Gaussian noise')
 parser.add_argument('--sig_max', type=float, default=0.1, help='max threshold of sigma')
 parser.add_argument('--smoothing', type=float, default=0.1, help='used in mode Label_smoothing')
 parser.add_argument('--delay_eps', type=float, default=50.0, help='p-norm of adaptive regularization')
@@ -85,7 +81,7 @@ parser.add_argument('--dropout',type=float, default=0.5, help='dropout=0,0.5')
 parser.add_argument('--lr', type=float, default=1e-5, help='learning rate')
 parser.add_argument('--decay', type=float, default=0.9, help='decay rate of RMSProp')
 parser.add_argument('--weight_decay', type=float, default=0.0001, help='weight decay')
-parser.add_argument('--num_class', default=5, type=int, choices=[2,5,3,10,100], 
+parser.add_argument('--num_class', default=5, type=int, choices=[2,5,3], 
     help='2 for SST-binary, 5 for SST-fine')
 parser.add_argument('--q', default=0.7, type=float, help='q for GCE')
 
@@ -105,15 +101,6 @@ args = parser.parse_args()
 if args.dataset in ["MNLI", "QQP"]:
     args.data_path = f"data/{args.dataset}"
     args.num_class = 3 if args.dataset=="MNLI" else 2
-elif "CIFAR" in args.dataset:
-    if args.dataset in ['CIFAR-10_5K','CIFAR10']:
-        args.num_class = 10
-        # args.batch_size = 8
-        # args.epochs = 300
-    elif args.dataset in ['CIFAR-100']:
-        args.num_class = 100
-        # args.batch_size = 8
-        # args.epochs = 300
 else:
     args.data_path = {
         2: 'data/sst-2',
@@ -140,46 +127,8 @@ SST_CONFIG = {
     "GCE": GCELoss(num_classes=args.num_class, reduction='none')
 }
 
-CIFAR10_CONFIG = {
-    "CE": CELoss(reduction='none'),
-    "FL": FocalLoss(gamma=0.5),
-    "MAE": MAELoss(num_classes=10, reduction='none'),
-    "GCE": GCELoss(num_classes=10, q=0.01, reduction='none'),
-    "SCE": SCELoss(num_classes=10, a=0.1, b=1),
-    # "NLNL": NLNL(train_loader, num_classes=10),
-    "NFL": NormalizedFocalLoss(gamma=0.5, num_classes=10),
-    "NGCE": NGCELoss(num_classes=10),
-    "NCE": NCELoss(num_classes=10),
-    "NFL+RCE": NFLandRCE(alpha=1, beta=1, num_classes=10, gamma=0.5),
-    "NCEandMAE": NCEandMAE(alpha=1, beta=1, num_classes=10),
-    "NCEandRCE": NCEandRCE(alpha=1, beta=1, num_classes=10),
-}
-
-CIFAR100_CONFIG = {
-    "CE": nn.CrossEntropyLoss(),
-    "FL": FocalLoss(gamma=0.5),
-    "MAE": MAELoss(num_classes=100),
-    "GCE": GCELoss(num_classes=100, q=0.001),
-    "SCE": SCELoss(num_classes=100, a=6, b=0.1),
-    # "NLNL": NLNL(train_loader, num_classes=10),
-    "NFL": NormalizedFocalLoss(gamma=0.5, num_classes=100),
-    "NGCE": NGCELoss(num_classes=100),
-    "NCE": NCELoss(num_classes=100),
-    "NFL+RCE": NFLandRCE(alpha=10, beta=1, num_classes=100, gamma=0.5),
-    "NCEandMAE": NCEandMAE(alpha=10, beta=1, num_classes=100),
-    "NCEandRCE": NCEandRCE(alpha=10, beta=1, num_classes=100),
-}
-
-CIFAR10_PATH = config["CIFAR10_PATH"]
-CIFAR10_LB_PATH = config["CIFAR10_LB_PATH"]
-CIFAR100_PATH = config["CIFAR100_PATH"]
-CIFAR100_LB_PATH = config["CIFAR100_LB_PATH"]
-
-#learning_rate_schedule = np.array([80, 100, 160])#for CIFAR10/CIFAR100
-
 if __name__ == '__main__':
     config = load_config()
     print(config)
     args = parser.parse_args()
     print(args)
-    print(CIFAR10_PATH, CIFAR10_LB_PATH, CIFAR100_PATH, CIFAR100_LB_PATH)
