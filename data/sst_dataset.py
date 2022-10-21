@@ -35,7 +35,7 @@ def get_binary_label(label):
         return 1
     raise ValueError("Invalid label")
 
-
+# Adapt from: https://github.com/munikarmanish/bert-sentiment/blob/master/bert_sentiment/data.py
 class SSTDataset(Dataset):
     """Configurable SST Dataset.
     
