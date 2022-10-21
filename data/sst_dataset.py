@@ -11,21 +11,10 @@ from transformers import BertTokenizer,BertConfig,BertForSequenceClassification
 from torch.utils.data import Dataset
 
 print("Loading the tokenizer")
-tokenizer = BertTokenizer.from_pretrained(args.model_path) #"bert-large-uncased"
+tokenizer = BertTokenizer.from_pretrained(args.model_path)
 
 print("Loading SST")
 sst = pytreebank.load_sst()
-
-SEP = [tokenizer.sep_token_id] #[SEP]
-
-def rpad(array, n=70):
-    """Right padding."""
-    current_len = len(array)
-    if current_len > n:
-        return array[: n - 1] + SEP
-    extra = n - current_len
-    return array + ([0] * extra)
-
 
 def get_binary_label(label):
     """Convert fine-grained label to binary label."""
@@ -155,7 +144,7 @@ def generate_noisy_labels(args):
         f.writelines('\n'.join(lines))
     print(f'==> Noisy Label generated at {noisy_file}')
 
-# Dataset (words, noisy ,truth)
+# Dataset (words, labels, target_gt, index)
 def get_sst_train_and_val_loader(args):
     print('==> Preparing data for sst..')
 
@@ -204,7 +193,8 @@ def get_SST_model_and_loss_criterion(args):
     config.num_labels = args.num_class
     model = BertForSequenceClassification.from_pretrained(args.model_path, config=config)
     model.to(args.device)
-    criterion = SST_CONFIG[args.loss].to(args.device) #CE/GCE
+    criterion = SST_CONFIG[args.loss].to(args.device) # CE/GCE
+    # Update parameter for loss function
     if args.loss == 'GCE':
         criterion.q = args.q 
         criterion.num_classes = args.num_class

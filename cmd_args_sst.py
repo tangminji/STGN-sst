@@ -44,7 +44,7 @@ parser.add_argument('--patience', type=int, default=3, help='patience for increa
 parser.add_argument('--times', type=float, default=3.0, help='increase perturb by times')
 parser.add_argument('--avg_steps', type=int, default=10, help='step nums at most to calculate k1')
 parser.add_argument('--adjustimes', type=int, default=10, help='Maximum number of adjustments')
-parser.add_argument('--sigma', type=float, default=0.05, help='STD of Gaussian noise')#label0.5/para5e-3/moutput5e-3
+parser.add_argument('--sigma', type=float, default=0.05, help='STD of Gaussian noise')
 parser.add_argument('--sig_max', type=float, default=0.1, help='max threshold of sigma')
 parser.add_argument('--smoothing', type=float, default=0.1, help='used in mode Label_smoothing')
 parser.add_argument('--delay_eps', type=float, default=50.0, help='p-norm of adaptive regularization')
@@ -81,7 +81,7 @@ parser.add_argument('--dropout',type=float, default=0.5, help='dropout=0,0.5')
 parser.add_argument('--lr', type=float, default=1e-5, help='learning rate')
 parser.add_argument('--decay', type=float, default=0.9, help='decay rate of RMSProp')
 parser.add_argument('--weight_decay', type=float, default=0.0001, help='weight decay')
-parser.add_argument('--num_class', default=5, type=int, choices=[2,5,3,10,100], 
+parser.add_argument('--num_class', default=5, type=int, choices=[2,5,3], 
     help='2 for SST-binary, 5 for SST-fine')
 parser.add_argument('--q', default=0.7, type=float, help='q for GCE')
 

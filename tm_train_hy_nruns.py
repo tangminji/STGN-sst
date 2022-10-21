@@ -1,7 +1,5 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-# #os.environ["CUDA_VISIBLE_DEVICES"] = "0"#"0,1,2"
 
 import time
 import torch
@@ -21,10 +19,6 @@ from hyperopt import STATUS_OK
 import csv
 
 from sklearn.metrics import f1_score
-
-first = True
-counter = 0
-sig_max = args.sig_max
 
 train_f1, dev_f1 = [], []
 macro_train_f1, macro_dev_f1 = [], []
@@ -137,9 +131,7 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
 
         # ADD
         loss_parameters[index] = loss.detach().cpu()
-
-        loss = loss.mean()        
-        #new_l = new_l.mean()
+        loss = loss.mean()
         optimizer.zero_grad()
         loss.backward()
         clip_grad_norm_(model.parameters(), max_norm=3, norm_type=2)
@@ -157,6 +149,7 @@ def train_others(args, model, loader, optimizer, criterion, global_iter, epoch, 
         fc = agree[~gt]
         tc = agree[gt]
         num = target.size(0)
+        # fc + tc <= 1.0
         fcorrect.update(fc.sum().item() * (100.0 / num), num)
         tcorrect.update(tc.sum().item() * (100.0 / num), num)
         acc1 = compute_topk_accuracy(output, target, topk=(1,))
@@ -249,6 +242,7 @@ def main(params):
     """Objective function for Hyperparameter Optimization"""
     # Keep track of evals
 
+    # Ablation Study
     if 'ab_sigma' in args.exp_name:
         params['sigma'] = args.sigma
     if 'ab_l' in args.exp_name:
@@ -281,7 +275,6 @@ def main(params):
     
     if not os.path.exists(args.exp_name):
         os.makedirs(args.exp_name)
-    #args.logpath = os.path.join(args.exp_name, 'log.txt')
     args.logpath = args.exp_name + '/' + 'log.txt'
     
     args.log_dir = os.path.join(os.getcwd(), args.exp_name)
@@ -326,13 +319,13 @@ def main(params):
         # TODO: NMP: noise on model parameters
         #https://discuss.pytorch.org/t/difference-between-state-dict-and-parameters/37531/7
         for param in parameters:
-                # TODO: leaf nodes
-                param.register_hook(hook_fn_parameter)
+            # TODO: leaf nodes
+            param.register_hook(hook_fn_parameter)
 
     cudnn.benchmark = True
+
+    # For Bert
     optimizer = torch.optim.Adam(parameters, lr=args.lr)
-    # optimizer = torch.optim.RMSprop(parameters, lr=args.lr, alpha=args.decay, weight_decay=args.weight_decay)
-    #optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
 
     # Training
     global_t0 = time.time()
@@ -346,6 +339,7 @@ def main(params):
 
     for epoch in range(0, args.epochs + 1):
         args.cur_epoch = epoch
+        # Test only on epoch 0
         if epoch > 0:
             global_iter, train_loss, train_acc, tc_acc, fc_acc = train_others(args, net, train_loader, optimizer, criterion,
                                                                 global_iter, epoch, args.logpath)
@@ -358,7 +352,6 @@ def main(params):
         if val_acc > val_best:
             val_best = val_acc
             test_best = test_acc
-            #checkpoint(val_acc, epoch, model, args.save_dir)
             torch.save(net.state_dict(), os.path.join(args.save_dir,'net.pt'))
 
         if epoch == 0:
@@ -375,8 +368,8 @@ def main(params):
                     name='epoch_stats_sigma_dyn_clean',
                     step=epoch)
 
-    # reload the best model
-    # save_data(args, net, train_loader, val_loader, test_loader)
+    # reload the best model and save sentence representation
+    save_data(args, net, train_loader, val_loader, test_loader)
 
     run_time = time.time()-global_t0
     #save 3 types of acc
@@ -405,7 +398,6 @@ def main(params):
 
     log(args.logpath, '\nTotal Time: {:.1f}s.\n'.format(run_time))
 
-    # loss = - val_best
     loss = - test_best
     return {'loss': loss, 'best_acc': val_best, 'test_at_best': test_best, 'stable_acc': stable_acc,
             'params': params, 'train_time': run_time, 'status': STATUS_OK}
