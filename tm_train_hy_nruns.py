@@ -368,9 +368,6 @@ def main(params):
                     name='epoch_stats_sigma_dyn_clean',
                     step=epoch)
 
-    # reload the best model and save sentence representation
-    save_data(args, net, train_loader, val_loader, test_loader)
-
     run_time = time.time()-global_t0
     #save 3 types of acc
     # record best_acc/best_mae
