@@ -249,7 +249,7 @@ def main(params):
         params['ratio_l'] = args.ratio_l
     if 'sigma' in args.exp_name:
         params['sigma'] = args.sigma
-    if 'times' in args.exp_name:
+    if '-times' in args.exp_name:
         params['times'] = args.times
     if 'forget_times' in args.exp_name:
         params['forget_times'] = args.forget_times

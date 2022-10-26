@@ -1,1 +1,1 @@
-{"best": {"q":0.2, "avg_steps": 20, "forget_times": 2.0, "ratio_l": 0.5, "sigma": 0.005, "times": 10}}
+{"best": {"q":0.3, "avg_steps": 20, "forget_times": 2.0, "ratio_l": 0.5, "sigma": 0.005, "times": 10}}
