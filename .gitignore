@@ -158,8 +158,8 @@ cifar10*.py
 cifar100*.py
 
 # GLUE data
-MNLI/
-QQP/
+data/MNLI/
+data/QQP/
 
 # ipynb notebook
 *.ipynb
