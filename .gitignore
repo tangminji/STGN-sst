@@ -152,10 +152,14 @@ unused*/
 config.json
 
 # CIFAR data (TODO)
-CIFAR10/
-CIFAR100/
+data/CIFAR10/
+data/CIFAR100/
 cifar10*.py
 cifar100*.py
+
+# GLUE data
+data/MNLI
+data/QQP
 
 # ipynb notebook
 *.ipynb
