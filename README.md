@@ -67,7 +67,7 @@ do
     --dataset $dataset \
     --noise_rate $noise_rate \
     --seed $i \
-    --exp_name ../sst-bert-output/nrun/$dataset_$method/nr$noise_rate/seed$i \
+    --exp_name ../sst-bert-output/nrun/$dataset-$method/nr$noise_rate/seed$i \
     --params_path choose_params/$dataset/$method/best_params$noise_rate.json
   done
 done
