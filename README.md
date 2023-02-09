@@ -1,11 +1,9 @@
-# STGN
+# STGN: an Implicit Regularization Method for Learning with Noisy Labels in Natural Language Processing
 
-source code and data for
-+ [EMNLP2022] STGN: an Implicit Regularization Method for Learning with Noisy
-Labels in Natural Language Processing
+Main experiment of ["STGN: an Implicit Regularization Method for Learning with Noisy Labels in Natural Language Processing"](https://aclanthology.org/2022.emnlp-main.515/) (EMNLP 2022) by Tingting Wu, Xiao Ding, Minji Tang, Hao Zhang, Bing Qin, Ting Liu.
 
 Note:
-+ To reproduce the paper results, you can run the stable version ['master/v5.0'](https://github.com/tangminji/STGN-sst/tree/master) on `tesla_v100-sxm2-16gb`. However, the noise on SST is not in strictly uniform distribution.
++ To reproduce the paper results, you can run the stable version ['v5.0'](https://github.com/tangminji/STGN-sst/tree/v5.0) on `tesla_v100-sxm2-16gb`. However, the noise on SST is not in strictly uniform distribution.
 + We will fix data with uniform distribution and adjust code in [`dev`](https://github.com/tangminji/STGN-sst/tree/dev) branch.
 
 ## Models
