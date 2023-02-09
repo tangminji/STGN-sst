@@ -5,7 +5,7 @@ source code and data for
 Labels in Natural Language Processing
 
 Note:
-+ To reproduce the paper results, you can run the stable version ['master/v5.0'](https://github.com/tangminji/STGN-sst/tree/master) on `tesla_v100-sxm2-16gb`. However, the noise on SST is not in strictly uniform distribution.
++ To reproduce the paper results, you can run the stable version ['master/v5.0'](https://github.com/tangminji/STGN-sst/tree/v5.0) on `tesla_v100-sxm2-16gb`. However, the noise on SST is not in strictly uniform distribution.
 + We will fix data with uniform distribution and adjust code in [`dev`](https://github.com/tangminji/STGN-sst/tree/dev) branch.
 
 ## Models
