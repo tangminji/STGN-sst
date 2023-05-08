@@ -6,6 +6,15 @@ Note:
 + To reproduce the paper results, you can run the stable version ['v5.0'](https://github.com/tangminji/STGN-sst/tree/v5.0) on `tesla_v100-sxm2-16gb`. However, the noise on SST is not in strictly uniform distribution.
 + We will fix data with uniform distribution and adjust code in [`dev`](https://github.com/tangminji/STGN-sst/tree/dev) branch.
 
+Experiment on NoisyNER and wikiHow:
+-  NoisyNER: 
+   - [our code](https://github.com/tangminji/STGN-NoisyNER)
+   - [original work](https://github.com/uds-lsv/noise-estimation)
+
+- wikiHow: 
+  - [our code](https://github.com/tangminji/STGN-wikiHow) 
+  - [original work](https://github.com/zharry29/wikihow-goal-step)
+
 ## Models
 + BERT  bert-base-uncased, batch_size=32, epochs=10, Adam(lr=1e-5)
   + tesla_v100-sxm2-16gb    0.2h/run;   for GMMP:  0.8h/run.
