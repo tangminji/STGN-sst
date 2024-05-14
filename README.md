@@ -96,3 +96,28 @@ You can change arguments for different experiments.
     + For other methods, you can choose `[0.1, 0.2, 0.4, 0.6]`.
 + seed (i)
     + You may try many different seeds to analyse the method performance, since the seeds make a difference on the results(peak test acc). For example, you can choose `[0, 1, 2, 3, 4]`.
+
+## Citation
+If you find this code useful in your research then please cite:
+```
+@inproceedings{wu-etal-2022-stgn,
+    title = "{STGN}: an Implicit Regularization Method for Learning with Noisy Labels in Natural Language Processing",
+    author = "Wu, Tingting  and
+      Ding, Xiao  and
+      Tang, Minji  and
+      Zhang, Hao  and
+      Qin, Bing  and
+      Liu, Ting",
+    editor = "Goldberg, Yoav  and
+      Kozareva, Zornitsa  and
+      Zhang, Yue",
+    booktitle = "Proceedings of the 2022 Conference on Empirical Methods in Natural Language Processing",
+    month = dec,
+    year = "2022",
+    address = "Abu Dhabi, United Arab Emirates",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2022.emnlp-main.515",
+    doi = "10.18653/v1/2022.emnlp-main.515",
+    pages = "7587--7598",
+}
+```
